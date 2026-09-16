@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+      name="description"
+      content="CS 180 Project 1 report: colorizing the Prokudin-Gorskii photo collection with single-scale and image-pyramid alignment."
+    >
+    <title>Images of the Russian Empire | CS 180 Project 1</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-mark" href="#top" aria-label="Back to top">CS 180 / 01</a>
+      <nav class="site-nav" aria-label="Report sections">
+        <a href="#overview">Overview</a>
+        <a href="#single-scale">Single-scale</a>
+        <a href="#pyramid">Pyramid</a>
+        <a href="#results">Results</a>
+        <a href="#analysis">Analysis</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="report-title">
+        <div class="hero-content">
+          <p class="eyebrow">CS 180 &middot; Project 1 &middot; Fall 2026</p>
+          <h1 id="report-title">Images of the Russian Empire</h1>
+          <p class="hero-summary">
+            Recovering color from Prokudin-Gorskii's glass plate negatives through
+            coarse-to-fine channel alignment.
+          </p>
+          <div class="hero-meta" aria-label="Project metadata">
+            <span>Jiankang Chang</span>
+            <span>September 2026</span>
+            <span>L2 alignment</span>
+          </div>
+        </div>
+        <p class="hero-caption">Church &middot; reconstructed from three monochrome exposures</p>
+      </section>
+
+      <section class="section overview" id="overview">
+        <div class="section-heading">
+          <p class="section-index">01 / Overview</p>
+          <h2>Three exposures, one color photograph</h2>
+        </div>
+        <div class="overview-layout">
+          <div class="prose measure">
+            <p class="lede">
+              Sergei Prokudin-Gorskii recorded scenes through blue, green, and red
+              filters on a single glass plate. The scans preserve these exposures as
+              three vertically stacked grayscale images, but small shifts between them
+              create strong color fringes when they are combined directly.
+            </p>
+            <p>
+              My pipeline splits each scan in B, G, R order, treats blue as the fixed
+              reference, estimates translations for green and red, and merges the
+              aligned channels into a color image. Small JPEGs use exhaustive
+              single-scale search; full-resolution TIFFs use a coarse-to-fine image
+              pyramid.
+            </p>
+          </div>
+          <dl class="project-facts">
+            <div>
+              <dt>14</dt>
+              <dd>course images</dd>
+            </div>
+            <div>
+              <dt>5</dt>
+              <dd>selected plates</dd>
+            </div>
+            <div>
+              <dt>19</dt>
+              <dd>results shown</dd>
+            </div>
+            <div>
+              <dt>3.48 s</dt>
+              <dd>average TIFF runtime</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="pipeline" aria-labelledby="pipeline-title">
+        <div class="section pipeline-inner">
+          <div class="section-heading inverse">
+            <p class="section-index">Processing pipeline</p>
+            <h2 id="pipeline-title">From glass plate to RGB</h2>
+          </div>
+          <ol class="pipeline-steps">
+            <li>
+              <span class="step-number">01</span>
+              <strong>Split</strong>
+              <span>Separate the vertical scan into B, G, and R exposures.</span>
+            </li>
+            <li>
+              <span class="step-number">02</span>
+              <strong>Normalize</strong>
+              <span>Convert JPEG and TIFF intensities to floating point in [0, 1].</span>
+            </li>
+            <li>
+              <span class="step-number">03</span>
+              <strong>Align</strong>
+              <span>Estimate G→B and R→B translations with normalized L2 error.</span>
+            </li>
+            <li>
+              <span class="step-number">04</span>
+              <strong>Compose</strong>
+              <span>Shift the channels, clear invalid pixels, and merge the result.</span>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section" id="single-scale">
+        <div class="section-heading">
+          <p class="section-index">02 / Single-scale alignment</p>
+          <h2>Exhaustive search for small images</h2>
+        </div>
+        <div class="method-layout">
+          <div class="prose measure">
+            <p class="lede">
+              For each candidate displacement in a 31 &times; 31 search window, I shift
+              the moving channel and compare only the valid overlap against the blue
+              reference. The displacement with the smallest L2 score is retained.
+            </p>
+            <p>
+              Five percent of each edge is excluded before scoring so that the scanned
+              plate border does not dominate the match. Pixel work is vectorized, while
+              the displacement search remains an explicit pair of loops.
+            </p>
+            <div class="formula" aria-label="L2 matching formula">
+              <span class="formula-name">Normalized L2</span>
+              <code>d(I, J) = sqrt(Σ(I - J)² / N)</code>
+            </div>
+          </div>
+          <dl class="method-spec">
+            <div><dt>Reference</dt><dd>Blue channel</dd></div>
+            <div><dt>Search range</dt><dd>x, y ∈ [-15, 15]</dd></div>
+            <div><dt>Border ignored</dt><dd>5% per side</dd></div>
+            <div><dt>Coordinate rule</dt><dd>+x right, +y down</dd></div>
+          </dl>
+        </div>
+
+        <div class="gallery-heading">
+          <h3>Low-resolution results</h3>
+          <p>Offsets are reported as (x, y), with each channel aligned to blue.</p>
+        </div>
+        <div class="result-grid featured-grid" id="single-gallery"></div>
+      </section>
+
+      <section class="section section-rule" id="pyramid">
+        <div class="section-heading">
+          <p class="section-index">03 / Multi-scale alignment</p>
+          <h2>Coarse estimates, fine corrections</h2>
+        </div>
+        <div class="method-layout">
+          <div class="prose measure">
+            <p class="lede">
+              Searching a large displacement window at full TIFF resolution is
+              expensive. I recursively downsample both channels, solve the alignment at
+              the coarsest level, then propagate the estimate back toward the original
+              image.
+            </p>
+            <p>
+              At every finer level, the previous offset is scaled to the new dimensions
+              and refined within a &plusmn;2 pixel neighborhood. The same L2 matcher is
+              reused at every level, so the pyramid changes the search strategy rather
+              than the matching objective.
+            </p>
+          </div>
+          <div class="pyramid-diagram" aria-label="Five-level coarse-to-fine image pyramid">
+            <div class="pyramid-level level-5"><span>1/16</span><small>global search</small></div>
+            <div class="pyramid-arrow" aria-hidden="true">&darr;</div>
+            <div class="pyramid-level level-4"><span>1/8</span><small>&plusmn;2 refine</small></div>
+            <div class="pyramid-arrow" aria-hidden="true">&darr;</div>
+            <div class="pyramid-level level-3"><span>1/4</span><small>&plusmn;2 refine</small></div>
+            <div class="pyramid-arrow" aria-hidden="true">&darr;</div>
+            <div class="pyramid-level level-2"><span>1/2</span><small>&plusmn;2 refine</small></div>
+            <div class="pyramid-arrow" aria-hidden="true">&darr;</div>
+            <div class="pyramid-level level-1"><span>Full resolution</span><small>final correction</small></div>
+          </div>
+        </div>
+
+        <div class="gallery-heading">
+          <h3>Full-resolution course images</h3>
+          <p>Eleven TIFF scans aligned with a five-level pyramid.</p>
+        </div>
+        <div class="result-grid" id="pyramid-gallery"></div>
+      </section>
+
+      <section class="results-band" id="results">
+        <div class="section results-inner">
+          <div class="section-heading">
+            <p class="section-index">04 / Measurements</p>
+            <h2>Offsets and runtime</h2>
+          </div>
+          <div class="table-toolbar">
+            <p>All displacements align the named channel to the blue reference.</p>
+            <div class="segmented-control" aria-label="Filter measurements">
+              <button type="button" data-filter="all" aria-pressed="true">All</button>
+              <button type="button" data-filter="course" aria-pressed="false">Course</button>
+              <button type="button" data-filter="selected" aria-pressed="false">Selected</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Image</th>
+                  <th scope="col">Source</th>
+                  <th scope="col">Method</th>
+                  <th scope="col">G → B (x, y)</th>
+                  <th scope="col">R → B (x, y)</th>
+                  <th scope="col">Runtime</th>
+                </tr>
+              </thead>
+              <tbody id="results-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="selected-plates">
+        <div class="section-heading">
+          <p class="section-index">05 / Selected plates</p>
+          <h2>Testing beyond the course set</h2>
+        </div>
+        <div class="section-intro measure">
+          <p class="lede">
+            I selected five additional glass plates from the Prokudin-Gorskii
+            collection. They use the same fixed parameters as the course images, with
+            no per-image tuning.
+          </p>
+        </div>
+        <div class="result-grid selected-grid" id="selected-gallery"></div>
+      </section>
+
+      <section class="section section-rule" id="analysis">
+        <div class="section-heading">
+          <p class="section-index">06 / Analysis</p>
+          <h2>What works, and where raw pixels struggle</h2>
+        </div>
+        <div class="analysis-layout">
+          <div class="analysis-item">
+            <h3>Stable across scale</h3>
+            <p>
+              The pyramid recovers offsets as large as 178 pixels while keeping TIFF
+              runtimes near four seconds. Coarse levels capture the large translation;
+              full-resolution levels contribute only small corrections.
+            </p>
+          </div>
+          <div class="analysis-item">
+            <h3>The Emir case</h3>
+            <p>
+              Emir is the hardest result for raw-pixel L2. The robe has very different
+              intensities under the three filters, so equal spatial content does not
+              imply equal pixel values. Edge or gradient features would reduce this
+              color-dependent mismatch.
+            </p>
+          </div>
+          <div class="analysis-item">
+            <h3>Border artifacts</h3>
+            <p>
+              Ignoring borders during scoring prevents the frame from steering the
+              alignment, but the final composites still reveal colored plate edges.
+              Automatic border detection and cropping would be a useful extension.
+            </p>
+          </div>
+          <div class="analysis-item">
+            <h3>Fixed parameters</h3>
+            <p>
+              One search window, border fraction, pyramid depth, and refinement radius
+              are used for all images. This makes the results reproducible and tests the
+              algorithm rather than image-specific parameter tuning.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="implementation-band" id="implementation">
+        <div class="section implementation-inner">
+          <div>
+            <p class="section-index">Implementation note</p>
+            <h2>Built from basic operations</h2>
+          </div>
+          <p>
+            The implementation uses OpenCV for image I/O and resizing, and NumPy for
+            array operations. Channel splitting, overlap-aware L2 scoring, exhaustive
+            search, displacement propagation, and pyramid recursion are implemented in
+            the project code without high-level alignment or pyramid functions.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>CS 180 &middot; Intro to Computer Vision and Computational Photography</p>
+      <div>
+        <a href="https://www.loc.gov/collections/prokudin-gorskii/">Library of Congress collection</a>
+        <a href="#top">Back to top</a>
+      </div>
+    </footer>
+
+    <dialog class="lightbox" id="lightbox" aria-labelledby="lightbox-title">
+      <form method="dialog">
+        <button class="lightbox-close" type="submit" aria-label="Close image" title="Close">&times;</button>
+      </form>
+      <button class="lightbox-nav lightbox-prev" type="button" aria-label="Previous image" title="Previous image">&lsaquo;</button>
+      <figure>
+        <img id="lightbox-image" src="assets/images/church.jpg" alt="">
+        <figcaption>
+          <strong id="lightbox-title">Church</strong>
+          <span id="lightbox-meta"></span>
+        </figcaption>
+      </figure>
+      <button class="lightbox-nav lightbox-next" type="button" aria-label="Next image" title="Next image">&rsaquo;</button>
+    </dialog>
+  </body>
+</html>
