@@ -1,16 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Jiankang Chang</title>
+    <title>My Portfolio - Jiankang Chang</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+            font-size: 20px;
             margin: 20px;
+        }
+
+        .module + .module {
+            margin-top: 80px;
         }
     </style>
 </head>
+
 <body>
-    <h1>Welcome to My Portfolio!</h1>
-    <a href="./UCB_CS_180_Project_1/index.html">CS 180 Project 1: Colorizing the Prokudin-Gorskii Photo Collection</a>
+    <section class="module">
+        <h1>Welcome to My Portfolio!</h1>
+        <p><strong>Current Time:</strong> <time id="current-time"></time></p>
+
+        <script>
+            function updateTime() {
+                const now = new Date();
+                document.getElementById("current-time").textContent = now.toLocaleString("en-US", { hour12: false });
+            }
+
+            updateTime();
+            setInterval(updateTime, 1000);
+        </script>
+    </section>
+
+    <section class="module">
+        <h2>About Me</h2>
+
+        <p><strong>Name:</strong> Jiankang Chang</p>
+        <p><strong>Gender:</strong> Male</p>
+        <p><strong>Birthday:</strong> August 13, 2005</p>
+        <p><strong>Student ID:</strong> 3043265878</p>
+        <p><strong>Major:</strong> Computer Science and Engineering</p>
+        <p><strong>Email:</strong> jiankangchang2026@berkeley.edu</p>
+    </section>
+
+    <section class="module">
+        <h2>My Projects</h2>
+
+        <h3>UC Berkeley - CS 180</h3>
+
+        <p><a href="./UCB_CS_180_Project_1/index.html">CS 180 Project 1: Colorizing the Prokudin-Gorskii Photo Collection</a></p>
+    </section>
 </body>
 </html>
