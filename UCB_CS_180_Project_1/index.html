@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta
       name="description"
-      content="CS 180 Project 1 report: colorizing the Prokudin-Gorskii photo collection with single-scale and image-pyramid alignment."
+      content="CS 180 Project 1 report: Colorizing the Prokudin-Gorskii photo collection with single-scale and pyramid alignment."
     >
     <title>CS 180 Project 1</title>
     <link rel="stylesheet" href="styles.css">
@@ -13,7 +13,7 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="site-mark" href="#top" aria-label="Back to top">CS 180 / 01</a>
+      <a class="site-mark" href="#top" aria-label="Back to top">CS 180 Project 1</a>
       <nav class="site-nav" aria-label="Report sections">
         <a href="#overview">Overview</a>
         <a href="#single-scale">Single-scale</a>
@@ -30,15 +30,16 @@
           <h1 id="report-title">Images of the Russian Empire</h1>
           <p class="hero-summary">
             Recovering color from Prokudin-Gorskii's glass plate negatives through
-            coarse-to-fine channel alignment.
+            single-scale/pyramid channel alignment.
           </p>
           <div class="hero-meta" aria-label="Project metadata">
             <span>Jiankang Chang</span>
-            <span>September 2026</span>
-            <span>L2 alignment</span>
+            <span>3043265878</span>
+            <span>jiankangchang2026@berkeley.edu</span>
+            <span>September 15, 2026</span>
           </div>
         </div>
-        <p class="hero-caption">Church &middot; reconstructed from three monochrome exposures</p>
+        <p class="hero-caption">Church (reconstructed by pyramid alignment)</p>
       </section>
 
       <section class="section overview" id="overview">
@@ -49,27 +50,27 @@
         <div class="overview-layout">
           <div class="prose measure">
             <p class="lede">
-              Sergei Prokudin-Gorskii recorded scenes through blue, green, and red
-              filters on a single glass plate. The scans preserve these exposures as
-              three vertically stacked grayscale images, but small shifts between them
+              Sergei Mikhailovich Prokudin-Gorskii recorded scenes through blue, green,
+              and red filters on a single glass plate. The scans preserve these exposures
+              as three vertically stacked grayscale images, but small shifts between them
               create strong color fringes when they are combined directly.
             </p>
-            <p>
+            <p class="lede">
               My pipeline splits each scan in B, G, R order, treats blue as the fixed
-              reference, estimates translations for green and red, and merges the
-              aligned channels into a color image. Small JPEGs use exhaustive
-              single-scale search; full-resolution TIFFs use a coarse-to-fine image
+              reference, estimates displacements for green and red, and merges the
+              aligned channels into a color image. Small JPGs use exhaustive
+              single-scale search; full-resolution TIFs use a coarse-to-fine image
               pyramid.
             </p>
           </div>
           <dl class="project-facts">
             <div>
               <dt>14</dt>
-              <dd>course images</dd>
+              <dd>course-provided images</dd>
             </div>
             <div>
               <dt>5</dt>
-              <dd>selected plates</dd>
+              <dd>self-selected images</dd>
             </div>
             <div>
               <dt>19</dt>
@@ -77,7 +78,7 @@
             </div>
             <div>
               <dt>3.48 s</dt>
-              <dd>average TIFF runtime</dd>
+              <dd>average TIF runtime</dd>
             </div>
           </dl>
         </div>
@@ -98,17 +99,17 @@
             <li>
               <span class="step-number">02</span>
               <strong>Normalize</strong>
-              <span>Convert JPEG and TIFF intensities to floating point in [0, 1].</span>
+              <span>Convert JPG and TIF pixel values to floating-point numbers in [0, 1].</span>
             </li>
             <li>
               <span class="step-number">03</span>
               <strong>Align</strong>
-              <span>Estimate G→B and R→B translations with normalized L2 error.</span>
+              <span>Estimate G→B and R→B displacements with Euclidean Distance (normalized L2 error).</span>
             </li>
             <li>
               <span class="step-number">04</span>
               <strong>Compose</strong>
-              <span>Shift the channels, clear invalid pixels, and merge the result.</span>
+              <span>Shift the channels, clear invalid pixels, and merge them to get the result.</span>
             </li>
           </ol>
         </div>
@@ -126,10 +127,10 @@
               the moving channel and compare only the valid overlap against the blue
               reference. The displacement with the smallest L2 score is retained.
             </p>
-            <p>
-              Five percent of each edge is excluded before scoring so that the scanned
-              plate border does not dominate the match. Pixel work is vectorized, while
-              the displacement search remains an explicit pair of loops.
+            <p class="lede">
+              5% of pixels at each edges are ignored in scoring, so that the alignment
+              would not be misled by the domination of plate borders. Pixel work is vectorized,
+              while the displacement search remains an explicit pair of loops.
             </p>
             <div class="formula" aria-label="L2 matching formula">
               <span class="formula-name">Normalized L2</span>
@@ -145,8 +146,8 @@
         </div>
 
         <div class="gallery-heading">
-          <h3>Low-resolution results</h3>
-          <p>Offsets are reported as (x, y), with each channel aligned to blue.</p>
+          <h3>JPG image results</h3>
+          <p>Offsets are reported as (x, y) in pixels, with each channel aligned to blue.</p>
         </div>
         <div class="result-grid featured-grid" id="single-gallery"></div>
       </section>
@@ -159,12 +160,12 @@
         <div class="method-layout">
           <div class="prose measure">
             <p class="lede">
-              Searching a large displacement window at full TIFF resolution is
+              Searching a large displacement window at full TIF resolution is
               expensive. I recursively downsample both channels, solve the alignment at
               the coarsest level, then propagate the estimate back toward the original
               image.
             </p>
-            <p>
+            <p class="lede">
               At every finer level, the previous offset is scaled to the new dimensions
               and refined within a &plusmn;2 pixel neighborhood. The same L2 matcher is
               reused at every level, so the pyramid changes the search strategy rather
@@ -185,8 +186,8 @@
         </div>
 
         <div class="gallery-heading">
-          <h3>Full-resolution course images</h3>
-          <p>Eleven TIFF scans aligned with a five-level pyramid.</p>
+          <h3>TIF image results</h3>
+          <p>11 TIF scans aligned with a 5-level pyramid.</p>
         </div>
         <div class="result-grid" id="pyramid-gallery"></div>
       </section>
@@ -230,7 +231,7 @@
         </div>
         <div class="section-intro measure">
           <p class="lede">
-            I selected five additional glass plates from the Prokudin-Gorskii
+            I selected 5 additional glass plates from the Prokudin-Gorskii
             collection. They use the same fixed parameters as the course images, with
             no per-image tuning.
           </p>
@@ -245,20 +246,19 @@
         </div>
         <div class="analysis-layout">
           <div class="analysis-item">
-            <h3>Stable across scale</h3>
+            <h3>Fixed parameters</h3>
             <p>
-              The pyramid recovers offsets as large as 178 pixels while keeping TIFF
-              runtimes near four seconds. Coarse levels capture the large translation;
-              full-resolution levels contribute only small corrections.
+              One search window, border fraction, pyramid depth, and refinement radius
+              are used for all images. This makes the results reproducible and tests the
+              algorithm rather than image-specific parameter tuning.
             </p>
           </div>
           <div class="analysis-item">
-            <h3>The Emir case</h3>
+            <h3>Stable across scale</h3>
             <p>
-              Emir is the hardest result for raw-pixel L2. The robe has very different
-              intensities under the three filters, so equal spatial content does not
-              imply equal pixel values. Edge or gradient features would reduce this
-              color-dependent mismatch.
+              The pyramid recovers offsets as large as 178 pixels while keeping TIF
+              runtimes near four seconds. Coarse levels capture the main transitions,
+              while full-resolution levels contribute only small corrections.
             </p>
           </div>
           <div class="analysis-item">
@@ -270,11 +270,12 @@
             </p>
           </div>
           <div class="analysis-item">
-            <h3>Fixed parameters</h3>
+            <h3>The Emir case</h3>
             <p>
-              One search window, border fraction, pyramid depth, and refinement radius
-              are used for all images. This makes the results reproducible and tests the
-              algorithm rather than image-specific parameter tuning.
+              Emir is the hardest result for raw-pixel L2. The robe has very different
+              intensities under the three filters, so equal spatial content does not
+              imply equal pixel values. Edge or gradient features would reduce this
+              color-dependent mismatch.
             </p>
           </div>
         </div>

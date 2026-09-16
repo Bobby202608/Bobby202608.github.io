@@ -13,11 +13,11 @@ const results = [
   { slug: "siren", name: "Siren", source: "course", method: "Pyramid", g: [-7, 49], r: [-25, 96], runtime: 3.3254 },
   { slug: "three_generations", name: "Three Generations", source: "course", method: "Pyramid", g: [13, 54], r: [10, 112], runtime: 3.4230 },
   { slug: "wharf", name: "Wharf", source: "course", method: "Pyramid", g: [-7, 15], r: [-17, 83], runtime: 3.7316 },
-  { slug: "00154", name: "Plate 00154", source: "selected", method: "Pyramid", g: [-5, 50], r: [-19, 111], runtime: 3.2176 },
-  { slug: "00203", name: "Plate 00203", source: "selected", method: "Pyramid", g: [17, 78], r: [8, 154], runtime: 3.3118 },
-  { slug: "00216", name: "Plate 00216", source: "selected", method: "Pyramid", g: [13, 37], r: [38, 86], runtime: 3.4199 },
-  { slug: "00245", name: "Plate 00245", source: "selected", method: "Pyramid", g: [-7, 28], r: [-18, 108], runtime: 3.2648 },
-  { slug: "00276", name: "Plate 00276", source: "selected", method: "Pyramid", g: [12, 43], r: [23, 138], runtime: 3.6926 },
+  { slug: "00154", name: "Image 00154", source: "selected", method: "Pyramid", g: [-5, 50], r: [-19, 111], runtime: 3.2176 },
+  { slug: "00203", name: "Image 00203", source: "selected", method: "Pyramid", g: [17, 78], r: [8, 154], runtime: 3.3118 },
+  { slug: "00216", name: "Image 00216", source: "selected", method: "Pyramid", g: [13, 37], r: [38, 86], runtime: 3.4199 },
+  { slug: "00245", name: "Image 00245", source: "selected", method: "Pyramid", g: [-7, 28], r: [-18, 108], runtime: 3.2648 },
+  { slug: "00276", name: "Image 00276", source: "selected", method: "Pyramid", g: [12, 43], r: [23, 138], runtime: 3.6926 },
 ];
 
 const imagePath = (item) => `assets/images/${item.slug}.jpg`;
