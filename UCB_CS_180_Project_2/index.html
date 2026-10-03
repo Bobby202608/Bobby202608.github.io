@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CS 180 Project 2 report webpage">
+    <title>CS 180 Project 2</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-mark" href="#top" aria-label="Back to top">CS 180 Project 2</a>
+      <nav class="site-nav" aria-label="Report sections">
+        <div class="nav-group">
+          <a class="nav-parent" href="#part1">Part 1</a>
+          <div class="nav-submenu" aria-label="Part 1 sections">
+            <a href="#part1-1-result">Part 1.1</a>
+            <a href="#part1-2-result">Part 1.2</a>
+            <a href="#part1-3-result">Part 1.3</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a class="nav-parent" href="#part2">Part 2</a>
+          <div class="nav-submenu" aria-label="Part 2 sections">
+            <a href="#part2-1-result">Part 2.1</a>
+            <a href="#part2-2-result">Part 2.2</a>
+            <a href="#part2-3-result">Part 2.3</a>
+            <a href="#part2-4-result">Part 2.4</a>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="report-title">
+        <div class="hero-content">
+          <p class="eyebrow">CS 180 &middot; Project 2 &middot; Fall 2026</p>
+          <h1 id="report-title">Fun with Filters and Frequencies</h1>
+          <p class="hero-summary">
+            Exploring convolution, gradients, filters, image sharpening,
+            hybrid images and multi-resolution blending with Python and OpenCV.
+          </p>
+          <div class="hero-meta" aria-label="Project metadata">
+            <span>Jiankang Chang</span>
+            <span>3043265878</span>
+            <span>jiankangchang2026@berkeley.edu</span>
+            <span>October 2, 2026</span>
+          </div>
+        </div>
+        <p class="hero-caption">Nutmeg (provided hybrid-image source)</p>
+      </section>
+
+      <section class="section-page" id="part1">
+        <div class="section-page-heading">
+          <p class="section-page-index">Part 1</p>
+          <h2>Fun with Filters</h2>
+        </div>
+
+        <section class="section-result" id="part1-1-result" aria-labelledby="part1-1-title">
+          <div class="section-result-heading">
+            <div>
+              <p class="section-result-index">Part 1.1</p>
+              <h3 id="part1-1-title">Convolutions from Scratch</h3>
+            </div>
+          </div>
+          <div class="section-result-layout">
+            <p>Here are the NumPy implementations of convolution with 4 and 2 for-loops respectively:</p>
+
+            <div class="code-panel">
+              <div class="panel-label"><code>submission/code/part1.py</code></div>
+              <pre><code>
+# a. Convolution with 4 for-loops:
+def convolve_4_loops(img: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    k_height, k_width = kernel.shape
+
+    # Flip the kernel
+    kernel_flip = np.flip(kernel, axis=(0, 1))
+
+    # Change to the original size
+    result = np.zeros((img.shape[0] - k_height + 1, img.shape[1] - k_width + 1), dtype=np.float64)
+
+    for row in range(result.shape[0]):
+        for col in range(result.shape[1]):
+            for i in range(k_height):
+                for j in range(k_width):
+                    result[row, col] += img[row + i, col + j] * kernel_flip[i, j]
+
+    return result
+
+
+# b. Convolution with 2 for-loops:
+def convolve_2_loops(img: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    k_height, k_width = kernel.shape
+
+    # Flip the kernel
+    kernel_flip = np.flip(kernel, axis=(0, 1))
+
+    # Change to the original size
+    result = np.zeros((img.shape[0] - k_height + 1, img.shape[1] - k_width + 1), dtype=np.float64)
+
+    for row in range(result.shape[0]):
+        for col in range(result.shape[1]):
+            window = img[row:row + k_height, col:col + k_width]
+            result[row, col] = np.sum(window * kernel_flip)
+
+    return result
+              </code></pre>
+            </div>
+
+            <p>With my selfie as the input image, the results after convolved with
+              three different versions of 9x9 box filter look <strong>the same</strong>:</p>
+
+            <div class="section-result-gallery section-result-gallery-4">
+              <figure>
+                <img src="assets/part1_1/selfie.jpg" alt="Original image" width="829" height="1190" loading="lazy">
+                <figcaption>Original image</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_1/result_a.png" alt="Output from 4-loop convolution" width="829" height="1190" loading="lazy">
+                <figcaption>4 for-loops</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_1/result_b.png" alt="Output from 2-loop convolution" width="829" height="1190" loading="lazy">
+                <figcaption>2 for-loops</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_1/result_c.png" alt="Output from scipy.signal.convolve2d" width="829" height="1190" loading="lazy">
+                <figcaption><code>scipy.signal.convolve2d</code></figcaption>
+              </figure>
+            </div>
+
+            <p>Here is a performance comparison among the three implementations:</p>
+            <div class="metric-grid metric-grid-3" aria-label="Part 1.1 measurements">
+              <div><strong>20.6454 s</strong><span>4 for-loops</span></div>
+              <div><strong>1.9218 s</strong><span>2 for-loops</span></div>
+              <div><strong>1.0189 s</strong><span><code>scipy.signal.convolve2d</code></span></div>
+            </div>
+
+            <p>The result shows that the 2-loop version is significantly faster than the 4-loop version, since
+              NumPy uses <strong>vectorization</strong> to speed up matrix operations and avoid element-wise loops.</p>
+          </div>
+        </section>
+
+        <section class="section-result" id="part1-2-result" aria-labelledby="part1-2-title">
+          <div class="section-result-heading">
+            <div>
+              <p class="section-result-index">Part 1.2</p>
+              <h3 id="part1-2-title">Finite Difference Operator</h3>
+            </div>
+          </div>
+          <div class="section-result-layout">
+            <p>Using Finite Difference Operator on the "cameraman" image,</p>
+
+            <p><strong>(1)</strong> The <strong>gradients in the x and y directions</strong>
+              respectively are visualized as below:</p>
+
+            <div class="section-result-gallery section-result-gallery-3">
+              <figure>
+                <img src="assets/part1_2/cameraman.png" alt="Original image" loading="lazy">
+                <figcaption>Original image</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_2/grad_x.png" alt="Gradient in the x-direction" loading="lazy">
+                <figcaption>Gradient in the x direction</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_2/grad_y.png" alt="Gradient in the y-direction" loading="lazy">
+                <figcaption>Gradient in the y direction</figcaption>
+              </figure>
+            </div>
+
+            <p><strong>(2)</strong> The <strong>magnitude and orientation</strong> of the gradients
+              are visualized as below:</p>
+
+            <div class="section-result-gallery section-result-gallery-3">
+              <figure>
+                <img src="assets/part1_2/grad_magnitude.png" alt="Gradient magnitude" loading="lazy">
+                <figcaption>Gradient magnitude</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_2/grad_orientation.png" alt="Gradient orientation" loading="lazy">
+                <figcaption>Gradient orientation</figcaption>
+              </figure>
+            </div>
+
+            <p><strong>(3)</strong> Trying different thresholds in {20, 40, 60, 80, 100}, 
+              we get the following <strong>binarized edge images</strong>:</p>
+
+            <div class="section-result-gallery section-result-gallery-5">
+              <figure>
+                <img src="assets/part1_2/bin_edge_20.png" alt="Binarized edge image with threshold 20" loading="lazy">
+                <figcaption>threshold 20</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_2/bin_edge_40.png" alt="Binarized edge image with threshold 40" loading="lazy">
+                <figcaption>threshold 40</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_2/bin_edge_60.png" alt="Binarized edge image with threshold 60" loading="lazy">
+                <figcaption>threshold 60</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_2/bin_edge_80.png" alt="Binarized edge image with threshold 80" loading="lazy">
+                <figcaption>threshold 80</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_2/bin_edge_100.png" alt="Binarized edge image with threshold 100" loading="lazy">
+                <figcaption>threshold 100</figcaption>
+              </figure>
+            </div>
+
+            <p>Comparing the results from different thresholds, we can find that:
+            <br>◇ When the threshold is <strong>low</strong> (20), the edge can be <strong>completely and clearly</strong>
+             extracted, but some <strong>noises</strong> are also present, especially in the regions of grassland and sky.
+            <br>◇ When the threshold is <strong>high</strong> (80 or 100), although the noises are reduced
+             (even eliminated), the edge turns to be <strong>incomplete</strong>, e.g. the edge of the cameraman's coat
+             is disconnected.
+            <br>◇ When the threshold is <strong>intermediate</strong> (40 or 60), the result reaches a
+             <strong>good balance</strong> between edge completeness and noise reduction.</p>
+          </div>
+        </section>
+
+        <section class="section-result" id="part1-3-result" aria-labelledby="part1-3-title">
+          <div class="section-result-heading">
+            <div>
+              <p class="section-result-index">Part 1.3</p>
+              <h3 id="part1-3-title">Derivative of Gaussian Filter</h3>
+            </div>
+          </div>
+
+          <div class="section-result-layout">
+            <p>Use Gaussian Filter to smooth the image in two methods before processing it as in Part 1.2:
+            <br>◇ <strong>Method A:</strong> Convolve the image with Gaussian kernel, then with Difference Operator.
+            <br>◇ <strong>Method B:</strong> Convolve the image with Derivative of Gaussian (DoG) kernel.</p>
+
+            <p><strong>(1) Gradients in the x and y directions</strong></p>
+
+            <p><strong>Method A:</strong></p>
+            <div class="section-result-gallery section-result-gallery-3">
+              <figure>
+                <img src="assets/part1_3/grad_x_gaussian.png" alt="Gradient in the x-direction" loading="lazy">
+                <figcaption>Gradient in the x direction</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/grad_y_gaussian.png" alt="Gradient in the y-direction" loading="lazy">
+                <figcaption>Gradient in the y direction</figcaption>
+              </figure>
+            </div>
+
+            <p><strong>Method B:</strong></p>
+            <div class="section-result-gallery section-result-gallery-3">
+              <figure>
+                <img src="assets/part1_3/grad_x_d_gaussian.png" alt="Gradient in the x-direction" loading="lazy">
+                <figcaption>Gradient in the x direction</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/grad_y_d_gaussian.png" alt="Gradient in the y-direction" loading="lazy">
+                <figcaption>Gradient in the y direction</figcaption>
+              </figure>
+            </div>
+
+            <p><strong>(2) Magnitude and orientation of the gradients</strong></p>
+
+            <p><strong>Method A:</strong></p>
+            <div class="section-result-gallery section-result-gallery-3">
+              <figure>
+                <img src="assets/part1_3/grad_magnitude_gaussian.png" alt="Gradient magnitude" loading="lazy">
+                <figcaption>Gradient magnitude</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/grad_orientation_gaussian.png" alt="Gradient orientation" loading="lazy">
+                <figcaption>Gradient orientation</figcaption>
+              </figure>
+            </div>
+
+            <p><strong>Method B:</strong></p>
+            <div class="section-result-gallery section-result-gallery-3">
+              <figure>
+                <img src="assets/part1_3/grad_magnitude_d_gaussian.png" alt="Gradient magnitude" loading="lazy">
+                <figcaption>Gradient magnitude</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/grad_orientation_d_gaussian.png" alt="Gradient orientation" loading="lazy">
+                <figcaption>Gradient orientation</figcaption>
+              </figure>
+            </div>
+
+            <p><strong>(3) Binarized edge images with thresholds in {20, 40, 60, 80, 100}</strong></p>
+
+            <p><strong>Method A:</strong></p>
+            <div class="section-result-gallery section-result-gallery-5">
+              <figure>
+                <img src="assets/part1_3/bin_edge_20_gaussian.png" alt="Binarized edge image with threshold 20" loading="lazy">
+                <figcaption>threshold 20</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/bin_edge_40_gaussian.png" alt="Binarized edge image with threshold 40" loading="lazy">
+                <figcaption>threshold 40</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/bin_edge_60_gaussian.png" alt="Binarized edge image with threshold 60" loading="lazy">
+                <figcaption>threshold 60</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/bin_edge_80_gaussian.png" alt="Binarized edge image with threshold 80" loading="lazy">
+                <figcaption>threshold 80</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/bin_edge_100_gaussian.png" alt="Binarized edge image with threshold 100" loading="lazy">
+                <figcaption>threshold 100</figcaption>
+              </figure>
+            </div>
+
+            <p><strong>Method B:</strong></p>
+            <div class="section-result-gallery section-result-gallery-5">
+              <figure>
+                <img src="assets/part1_3/bin_edge_20_d_gaussian.png" alt="Binarized edge image with threshold 20" loading="lazy">
+                <figcaption>threshold 20</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/bin_edge_40_d_gaussian.png" alt="Binarized edge image with threshold 40" loading="lazy">
+                <figcaption>threshold 40</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/bin_edge_60_d_gaussian.png" alt="Binarized edge image with threshold 60" loading="lazy">
+                <figcaption>threshold 60</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/bin_edge_80_d_gaussian.png" alt="Binarized edge image with threshold 80" loading="lazy">
+                <figcaption>threshold 80</figcaption>
+              </figure>
+              <figure>
+                <img src="assets/part1_3/bin_edge_100_d_gaussian.png" alt="Binarized edge image with threshold 100" loading="lazy">
+                <figcaption>threshold 100</figcaption>
+              </figure>
+            </div>
+
+            <p><strong>Findings:</strong></p>
+            <p><strong>(1)</strong> Comparing between the two methods, the results are the same because of
+              the <strong>associative</strong> property of convolution: <br><code>a * b * c = a * (b * c)</code>, where
+              <code>a</code> is image matrix, <code>b</code> is Gaussian kernel, and <code>c</code> is Difference Operator,
+              <code>b * c</code> is Derivative of Gaussian.</p>
+
+            <p><strong>(2)</strong> Compared with Part 1.2, the results in Part 1.3 is <strong>less noisy</strong>,
+              especially for the grassland and sky. With the help of Gaussian (low-pass) Filter,
+              those salt-and-pepper noises are suppressed, while the cameraman and tripod's borders are
+              extracted more clearly and correctly. However, the smoothing may lead to a <strong>loss of details</strong>,
+              so <strong>decreasing the threshold</strong> in this case may be necessary to maintain the effect.</p>
+          </div>
+        </section>
+      </section>
+
+      <section class="section-page section-divider" id="part2">
+        <div class="section-page-heading">
+          <p class="section-page-index">Part 2</p>
+          <h2>Fun with Frequencies</h2>
+        </div>
+
+        <section class="section-result" id="part2-1-result" aria-labelledby="part2-1-title">
+          <div class="section-result-heading">
+            <div>
+              <p class="section-result-index">Part 2.1</p>
+              <h3 id="part2-1-title">Image Sharpening</h3>
+            </div>
+          </div>
+          <div class="section-result-layout">
+          </div>
+        </section>
+
+        <section class="section-result" id="part2-2-result" aria-labelledby="part2-2-title">
+          <div class="section-result-heading">
+            <div>
+              <p class="section-result-index">Part 2.2</p>
+              <h3 id="part2-2-title">Hybrid Images</h3>
+            </div>
+          </div>
+          <div class="section-result-layout">
+          </div>
+        </section>
+
+        <section class="section-result" id="part2-3-result" aria-labelledby="part2-3-title">
+          <div class="section-result-heading">
+            <div>
+              <p class="section-result-index">Part 2.3</p>
+              <h3 id="part2-3-title">Gaussian and Laplacian Stacks</h3>
+            </div>
+          </div>
+          <div class="section-result-layout">
+          </div>
+        </section>
+
+        <section class="section-result" id="part2-4-result" aria-labelledby="part2-4-title">
+          <div class="section-result-heading">
+            <div>
+              <p class="section-result-index">Part 2.4</p>
+              <h3 id="part2-4-title">Multiresolution Blending</h3>
+            </div>
+          </div>
+          <div class="section-result-layout">
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>CS 180 &middot; Intro to Computer Vision and Computational Photography</p>
+      <div>
+        <a href="#top">Back to top</a>
+      </div>
+    </footer>
+  </body>
+</html>
