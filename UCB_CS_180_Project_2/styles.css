@@ -153,7 +153,7 @@ code {
   isolation: isolate;
   overflow: hidden;
   color: #fff;
-  background: url("../input/nutmeg.jpg") center 48% / cover;
+  background: #222 url("assets/part2_3_4/orange_apple/blended_result.png") center / auto 100% no-repeat;
 }
 
 .hero::before {
