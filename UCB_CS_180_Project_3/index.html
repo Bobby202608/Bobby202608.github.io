@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+      name="description"
+      content="CS 180 Project 3: Fun with Flow Models."
+    >
+    <title>CS 180 Project 3</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main id="top">
+      <section class="hero" aria-labelledby="report-title">
+        <div class="hero-copy">
+          <p class="eyebrow">CS 180 / Project 3 / Fall 2026</p>
+          <h1 id="report-title">Fun with<br><em>Flow Models</em></h1>
+          <h2>A visual study of flow matching</h2>
+          <dl class="report-meta">
+            <div>
+              <dt>Name</dt>
+              <dd>Jiankang Chang</dd>
+            </div>
+            <div>
+              <dt>Student ID</dt>
+              <dd>3043265878</dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd>jiankangchang2026@berkeley.edu</dd>
+            </div>
+            <div>
+              <dt>Date</dt>
+              <dd>October 20, 2026</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="hero-rule" aria-hidden="true"></div>
+      </section>
+
+      <div class="page-grid">
+        <aside class="page-index">
+          <nav aria-labelledby="contents-title">
+            <h2 id="contents-title">Contents</h2>
+            <ul class="index-parts">
+              <li>
+                <a class="index-part" href="#part-a">Part A</a>
+                <ul class="index-sections">
+                  <li><a href="#a-1-1" title="Constructing Noisy Training Inputs">Section 1.1</a></li>
+                  <li><a href="#a-1-2" title="Classical Denoising">Section 1.2</a></li>
+                  <li><a href="#a-1-3" title="One-Step Denoising">Section 1.3</a></li>
+                  <li><a href="#a-1-4" title="Visualizing Velocity">Section 1.4</a></li>
+                  <li><a href="#a-1-5" title="Iterative Denoising with Euler Sampling">Section 1.5</a></li>
+                  <li><a href="#a-1-6" title="Generating Images from Noise">Section 1.6</a></li>
+                  <li><a href="#a-2" title="Classifier-Free Guidance">Section 2</a></li>
+                  <li><a href="#a-3-1" title="Image-to-Image Editing">Section 3.1</a></li>
+                  <li><a href="#a-3-2" title="Text-Guided Image Editing">Section 3.2</a></li>
+                  <li><a href="#a-3-3" title="Visual Anagrams">Section 3.3</a></li>
+                  <li><a href="#a-3-4" title="Hybrid Images">Section 3.4</a></li>
+                  <li><a href="#a-bells">Bells and Whistles</a></li>
+                </ul>
+              </li>
+              <li>
+                <a class="index-part" href="#part-b">Part B</a>
+                <ul class="index-sections">
+                  <li><a href="#b-1" title="Training a Single-Step Denoising UNet">Section 1</a></li>
+                  <li><a href="#b-2-2" title="Training the UNet">Section 2.2</a></li>
+                  <li><a href="#b-2-3" title="Sampling from the UNet">Section 2.3</a></li>
+                  <li><a href="#b-2-5" title="Training the UNet">Section 2.5</a></li>
+                  <li><a href="#b-2-6" title="Sampling from the UNet">Section 2.6</a></li>
+                </ul>
+              </li>
+            </ul>
+          </nav>
+        </aside>
+
+        <div class="chapters">
+          <section class="chapter chapter-a" id="part-a" aria-labelledby="part-a-title">
+            <header class="chapter-header">
+              <span class="chapter-number">01</span>
+              <div>
+                <p class="chapter-label">Part A</p>
+                <h2 id="part-a-title">Exploring the Power of Flow Models</h2>
+              </div>
+            </header>
+
+            <div class="chapter-sections">
+              <section class="topic" aria-labelledby="a-one-title">
+                <span class="topic-number">Section 1</span>
+                <h3 id="a-one-title">Visualizing Training and Sampling</h3>
+                <div class="subtopics">
+                  <section class="experiment" id="a-1-1" aria-labelledby="a-1-1-title">
+                    <h4 id="a-1-1-title">1.1 Constructing Noisy Training Inputs</h4>
+                    <figure class="result-figure">
+                      <p class="section-note">Original image and noisy inputs at t = <strong>0.25</strong>, <strong>0.50</strong> and <strong>0.75</strong> respectively.</p>
+                      <a class="image-link" href="assets/parta_1_1/output.png" target="_blank" rel="noopener" aria-label="Open full-size image: Original image and noisy inputs at t = 0.25, 0.50, and 0.75.">
+                        <img src="assets/parta_1_1/output.png" width="1593" height="411" alt="Golden Gate Bridge photograph alongside three noisy versions, with less noise as t increases." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="a-1-2" aria-labelledby="a-1-2-title">
+                    <h4 id="a-1-2-title">1.2 Classical Denoising</h4>
+                    <figure class="result-figure">
+                      <p class="section-note">The candidate sigmas (σ) for Gaussian blur are <strong>1.0</strong>, <strong>2.0</strong>, <strong>4.0</strong>, <strong>8.0</strong> and <strong>16.0</strong>.</p>
+                      <p class="section-note"><strong>(1)</strong> When t = <strong>0.25</strong>, the best sigma is <strong>8.0</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_2/output_25.png" target="_blank" rel="noopener" aria-label="Open full-size image: Noisy input and Gaussian blur at t = 0.25.">
+                        <img src="assets/parta_1_2/output_25.png" width="793" height="411" alt="Noisy Golden Gate Bridge image and the result of Gaussian blur at t = 0.25." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> When t = <strong>0.50</strong>, the best sigma is <strong>4.0</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_2/output_50.png" target="_blank" rel="noopener" aria-label="Open full-size image: Noisy input and Gaussian blur at t = 0.50.">
+                        <img src="assets/parta_1_2/output_50.png" width="793" height="411" alt="Noisy Golden Gate Bridge image and the result of Gaussian blur at t = 0.50." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3)</strong> When t = <strong>0.75</strong>, the best sigma is <strong>2.0</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_2/output_75.png" target="_blank" rel="noopener" aria-label="Open full-size image: Noisy input and Gaussian blur at t = 0.75.">
+                        <img src="assets/parta_1_2/output_75.png" width="793" height="411" alt="Noisy Golden Gate Bridge image and the result of Gaussian blur at t = 0.75." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="a-1-3" aria-labelledby="a-1-3-title">
+                    <h4 id="a-1-3-title">1.3 One-Step Denoising</h4>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1)</strong> Original, noisy input, and one-step prediction at t = <strong>0.25</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_3/output_25.png" target="_blank" rel="noopener" aria-label="Open full-size image: Original, noisy input, and one-step prediction at t = 0.25.">
+                        <img src="assets/parta_1_3/output_25.png" width="1193" height="411" alt="Original Golden Gate Bridge photograph, noisy input, and one-step denoising result at t = 0.25." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> Original, noisy input, and one-step prediction at t = <strong>0.50</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_3/output_50.png" target="_blank" rel="noopener" aria-label="Open full-size image: Original, noisy input, and one-step prediction at t = 0.50.">
+                        <img src="assets/parta_1_3/output_50.png" width="1193" height="411" alt="Original Golden Gate Bridge photograph, noisy input, and one-step denoising result at t = 0.50." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3)</strong> Original, noisy input, and one-step prediction at t = <strong>0.75</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_3/output_75.png" target="_blank" rel="noopener" aria-label="Open full-size image: Original, noisy input, and one-step prediction at t = 0.75.">
+                        <img src="assets/parta_1_3/output_75.png" width="1193" height="411" alt="Original Golden Gate Bridge photograph, noisy input, and one-step denoising result at t = 0.75." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="a-1-4" aria-labelledby="a-1-4-title">
+                    <h4 id="a-1-4-title">1.4 Visualizing Velocity</h4>
+                    <figure class="result-figure">
+                      <p class="section-note">In the error map, <code>ERROR_VMIN</code> is set to <strong>0.0</strong>, <code>ERROR_VMAX</code> is set to <strong>0.5</strong>.</p>
+                      <p class="section-note"><strong>(1)</strong> Predicted velocity, ground truth, and error map at t = <strong>0.25</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_4/output_25.png" target="_blank" rel="noopener" aria-label="Open full-size image: Predicted velocity, ground truth, and error at t = 0.25.">
+                        <img src="assets/parta_1_4/output_25.png" width="1558" height="411" alt="Noisy image, predicted velocity update, ground-truth velocity update, and RGB RMS error map at t = 0.25." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> Predicted velocity, ground truth, and error map at t = <strong>0.50</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_4/output_50.png" target="_blank" rel="noopener" aria-label="Open full-size image: Predicted velocity, ground truth, and error at t = 0.50.">
+                        <img src="assets/parta_1_4/output_50.png" width="1558" height="411" alt="Noisy image, predicted velocity update, ground-truth velocity update, and RGB RMS error map at t = 0.50." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3)</strong> Predicted velocity, ground truth, and error map at t = <strong>0.75</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_4/output_75.png" target="_blank" rel="noopener" aria-label="Open full-size image: Predicted velocity, ground truth, and error at t = 0.75.">
+                        <img src="assets/parta_1_4/output_75.png" width="1558" height="411" alt="Noisy image, predicted velocity update, ground-truth velocity update, and RGB RMS error map at t = 0.75." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="a-1-5" aria-labelledby="a-1-5-title">
+                    <h4 id="a-1-5-title">1.5 Iterative Denoising with Euler Sampling</h4>
+                    <figure class="result-figure">
+                      <p class="section-note">Euler sampling trajectory from t = <strong>0.50</strong> to t = <strong>1.00</strong>.</p>
+                      <a class="image-link" href="assets/parta_1_5/trajectory.png" target="_blank" rel="noopener" aria-label="Open full-size image: Euler sampling trajectory from t = 0.50 to t = 1.00.">
+                        <img src="assets/parta_1_5/trajectory.png" width="1193" height="811" alt="Six stages of Euler sampling, showing the noisy bridge image becoming clearer." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note">Comparison: original, Gaussian blur, one-step denoising and Euler sampling.</p>
+                      <a class="image-link" href="assets/parta_1_5/comparison.png" target="_blank" rel="noopener" aria-label="Open full-size image: Comparison: original, Gaussian blur, one-step denoising, and Euler sampling.">
+                        <img src="assets/parta_1_5/comparison.png" width="1593" height="411" alt="Original bridge image compared with Gaussian blur, one-step denoising, and iterative Euler denoising." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="a-1-6" aria-labelledby="a-1-6-title">
+                    <h4 id="a-1-6-title">1.6 Generating Images from Noise</h4>
+                    <figure class="result-figure">
+                      <p class="section-note">Five samples generated from independent initial noises, whose random seeds are <strong>403</strong>, <strong>623</strong>, <strong>1020</strong>, <strong>2026</strong> and <strong>8785</strong> respectively.</p>
+                      <a class="image-link" href="assets/parta_1_6/output.png" target="_blank" rel="noopener" aria-label="Open full-size image: Five samples generated from independent initial noises.">
+                        <img src="assets/parta_1_6/output.png" width="1993" height="411" alt="Five generated images from conditional sampling, with each random seed labeled." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                </div>
+              </section>
+
+              <section class="topic" aria-labelledby="a-two-title">
+                <span class="topic-number">Section 2</span>
+                <h3 id="a-two-title">Conditional Generation and Guidance</h3>
+                <div class="subtopics">
+                  <section class="experiment" id="a-2" aria-labelledby="a-2-title">
+                    <h4 id="a-2-title">2. Classifier-Free Guidance (CFG)</h4>
+                    <figure class="result-figure">
+                      <p class="section-note">Five samples with classifier-free guidance (w = <strong>7</strong>), generated from the same initial noises as Section 1.6.</p>
+                      <a class="image-link" href="assets/parta_2/output.png" target="_blank" rel="noopener" aria-label="Open full-size image: Five samples with classifier-free guidance (w = 7).">
+                        <img src="assets/parta_2/output.png" width="1993" height="411" alt="Five generated images using classifier-free guidance, with the seed and guidance weight labeled." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                </div>
+              </section>
+
+              <section class="topic" aria-labelledby="a-three-title">
+                <span class="topic-number">Section 3</span>
+                <h3 id="a-three-title">Creative Applications</h3>
+                <div class="subtopics">
+                  <section class="experiment" id="a-3-1" aria-labelledby="a-3-1-title">
+                    <h4 id="a-3-1-title">3.1 Image-to-Image Editing</h4>
+                    <p class="section-note">Original inputs and edits at starting times t = <strong>0.02</strong>, <strong>0.04</strong>, <strong>0.06</strong>, <strong>0.10</strong>, <strong>0.14</strong>, <strong>0.25</strong> and <strong>0.50</strong>.
+                      <br>Prompt: “a high quality photo”.</p>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1)</strong> Campanile — original and seven edits.</p>
+                      <a class="image-link" href="assets/parta_3_1/output_campanile.png" target="_blank" rel="noopener" aria-label="Open full-size image: Campanile — original and seven edits.">
+                        <img src="assets/parta_3_1/output_campanile.png" width="1593" height="811" alt="Campanile input and seven image-to-image edits, ordered by increasing starting time." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> Cal bear — original and seven edits.</p>
+                      <a class="image-link" href="assets/parta_3_1/output_calbear.png" target="_blank" rel="noopener" aria-label="Open full-size image: Cal bear — original and seven edits.">
+                        <img src="assets/parta_3_1/output_calbear.png" width="1593" height="811" alt="Cal bear input and seven image-to-image edits, ordered by increasing starting time." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3)</strong> Hot pot — original and seven edits.</p>
+                      <a class="image-link" href="assets/parta_3_1/output_hotpot.png" target="_blank" rel="noopener" aria-label="Open full-size image: Hot pot — original and seven edits.">
+                        <img src="assets/parta_3_1/output_hotpot.png" width="1593" height="811" alt="Hot pot input and seven image-to-image edits, ordered by increasing starting time." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <h5 class="experiment-subtitle">Editing Hand-Drawn and Web Images</h5>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(4)</strong> Web image: Milk Dragon — original and seven edits.</p>
+                      <a class="image-link" href="assets/parta_3_1/output_milk_dragon.png" target="_blank" rel="noopener" aria-label="Open full-size image: Web image: Milk Dragon — original and seven edits.">
+                        <img src="assets/parta_3_1/output_milk_dragon.png" width="1593" height="811" alt="Web image: Milk Dragon input and seven image-to-image edits, ordered by increasing starting time." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(5)</strong> Hand-drawn farm — original and seven edits.</p>
+                      <a class="image-link" href="assets/parta_3_1/output_farm.png" target="_blank" rel="noopener" aria-label="Open full-size image: Hand-drawn farm — original and seven edits.">
+                        <img src="assets/parta_3_1/output_farm.png" width="1593" height="811" alt="Hand-drawn farm input and seven image-to-image edits, ordered by increasing starting time." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(6)</strong> Hand-drawn living room — original and seven edits.</p>
+                      <a class="image-link" href="assets/parta_3_1/output_living_room.png" target="_blank" rel="noopener" aria-label="Open full-size image: Hand-drawn living room — original and seven edits.">
+                        <img src="assets/parta_3_1/output_living_room.png" width="1593" height="811" alt="Hand-drawn living room input and seven image-to-image edits, ordered by increasing starting time." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="a-3-2" aria-labelledby="a-3-2-title">
+                    <h4 id="a-3-2-title">3.2 Text-Guided Image Editing</h4>
+                    <p class="section-note">Each input is edited at the same seven starting times: t = <strong>0.02</strong>, <strong>0.04</strong>, <strong>0.06</strong>, <strong>0.10</strong>, <strong>0.14</strong>, <strong>0.25</strong> and <strong>0.50</strong>.</p>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1)</strong> Campanile — “a photograph of a basketball player jumping into the air”.</p>
+                      <a class="image-link" href="assets/parta_3_2/output_campanile.png" target="_blank" rel="noopener" aria-label="Open full-size image: Campanile — “a photograph of a basketball player jumping into the air”.">
+                        <img src="assets/parta_3_2/output_campanile.png" width="1580" height="811" alt="Campanile original and seven edits guided by the prompt: a photograph of a basketball player jumping into the air." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> Cal bear — “a photograph of a grey bear playing on a skateboard”.</p>
+                      <a class="image-link" href="assets/parta_3_2/output_calbear.png" target="_blank" rel="noopener" aria-label="Open full-size image: Cal bear — “a photograph of a grey bear playing on a skateboard”.">
+                        <img src="assets/parta_3_2/output_calbear.png" width="1580" height="811" alt="Cal bear original and seven edits guided by the prompt: a photograph of a grey bear playing on a skateboard." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3)</strong> Hot pot — “a photograph of an amusement park”.</p>
+                      <a class="image-link" href="assets/parta_3_2/output_hotpot.png" target="_blank" rel="noopener" aria-label="Open full-size image: Hot pot — “a photograph of an amusement park”.">
+                        <img src="assets/parta_3_2/output_hotpot.png" width="1580" height="811" alt="Hot pot original and seven edits guided by the prompt: a photograph of an amusement park." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="a-3-3" aria-labelledby="a-3-3-title">
+                    <h4 id="a-3-3-title">3.3 Visual Anagrams</h4>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1)</strong><br>Upright: “a lithograph of a rat’s face”.<br>Rotated: “a lithograph of a cat’s face”.</p>
+                      <a class="image-link" href="assets/parta_3_3/output_rat_cat.png" target="_blank" rel="noopener" aria-label="Open full-size image: Upright: “a lithograph of a rat’s face”. Rotated: “a lithograph of a cat’s face”.">
+                        <img src="assets/parta_3_3/output_rat_cat.png" width="793" height="411" alt="A visual anagram shown upright as a rat and rotated 180 degrees as a cat." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong><br>Upright: “a small chocolate ice cream”.<br>Rotated: “the Eiffel Tower”.</p>
+                      <a class="image-link" href="assets/parta_3_3/output_icecream_tower.png" target="_blank" rel="noopener" aria-label="Open full-size image: Upright: “a small chocolate ice cream”. Rotated: “the Eiffel Tower”.">
+                        <img src="assets/parta_3_3/output_icecream_tower.png" width="793" height="411" alt="A visual anagram shown upright as chocolate ice cream and rotated 180 degrees as the Eiffel Tower." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="a-3-4" aria-labelledby="a-3-4-title">
+                    <h4 id="a-3-4-title">3.4 Hybrid Images</h4>
+                    <p class="section-note">Compare the full-size image with its reduced view to see the close-up and distant subjects.</p>
+                    <div class="hybrid-pair">
+                      <figure class="result-figure">
+                        <p class="section-note"><strong>(1)</strong> Close view — "flowers in red, pink and purple".</p>
+                        <a class="image-link" href="assets/parta_3_4/output_flowers.png" target="_blank" rel="noopener" aria-label="Open full-size image: Close view — Flowers.">
+                          <img src="assets/parta_3_4/output_flowers.png" width="512" height="512" alt="Full-size hybrid image: Flowers in the close-up view." loading="lazy" decoding="async">
+                        </a>
+                      </figure>
+                      <figure class="result-figure distant-view">
+                        <p class="section-note">Distant view — "a girl's face with two eyes, a nose, a mouth and an ear".</p>
+                        <a class="image-link" href="assets/parta_3_4/output_girl.png" target="_blank" rel="noopener" aria-label="Open full-size image: Distant view — A girl’s face.">
+                          <img src="assets/parta_3_4/output_girl.png" width="64" height="64" alt="Reduced 64 by 64 pixel view of the same hybrid image, showing A girl’s face." loading="lazy" decoding="async">
+                        </a>
+                      </figure>
+                    </div>
+                    <div class="hybrid-pair">
+                      <figure class="result-figure">
+                        <p class="section-note"><strong>(2)</strong> Close view — "an intelligent robot".</p>
+                        <a class="image-link" href="assets/parta_3_4/output_robot.png" target="_blank" rel="noopener" aria-label="Open full-size image: Close view — Robot.">
+                          <img src="assets/parta_3_4/output_robot.png" width="512" height="512" alt="Full-size hybrid image: Robot in the close-up view." loading="lazy" decoding="async">
+                        </a>
+                      </figure>
+                      <figure class="result-figure distant-view">
+                        <p class="section-note">Distant view — "a light bulb".</p>
+                        <a class="image-link" href="assets/parta_3_4/output_light_bulb.png" target="_blank" rel="noopener" aria-label="Open full-size image: Distant view — Light bulb.">
+                          <img src="assets/parta_3_4/output_light_bulb.png" width="64" height="64" alt="Reduced 64 by 64 pixel view of the same hybrid image, showing Light bulb." loading="lazy" decoding="async">
+                        </a>
+                      </figure>
+                    </div>
+                  </section>
+                </div>
+              </section>
+
+              <section class="topic topic-inline" id="a-bells" aria-labelledby="a-bells-title">
+                <h3 id="a-bells-title">Bells and Whistles</h3>
+                <section class="experiment" aria-labelledby="a-logo-title">
+                  <h4 id="a-logo-title">Course Logo Design</h4>
+                  <figure class="result-figure">
+                    <p class="section-note">I designed the course logo for CS180 by applying <strong>text-guided image editing</strong> to the UCB logo, similar to Section 3.2.
+                    <br>Prompt: "an eye with rainbow colors".
+                    <br>The most satisfying result came when t = <strong>0.02</strong>.</p>
+                    <a class="image-link" href="assets/parta_bw/output_logo.png" target="_blank" rel="noopener" aria-label="Open full-size image: UC Berkeley logo edits.">
+                      <img src="assets/parta_bw/output_logo.png" width="1580" height="811" alt="Original UC Berkeley seal and seven image-to-image edits at increasing starting times." loading="lazy" decoding="async">
+                    </a>
+                  </figure>
+                </section>
+              </section>
+
+            </div>
+          </section>
+
+          <section class="chapter chapter-b" id="part-b" aria-labelledby="part-b-title">
+            <header class="chapter-header">
+              <span class="chapter-number">02</span>
+              <div>
+                <p class="chapter-label">Part B</p>
+                <h2 id="part-b-title">Flow Matching from Scratch</h2>
+              </div>
+            </header>
+
+            <div class="chapter-sections">
+              <section class="topic" id="b-1" aria-labelledby="b-one-title">
+                <span class="topic-number">Section 1</span>
+                <h3 id="b-one-title">Training a Single-Step Denoising UNet</h3>
+                <div class="subtopics">
+                  <section class="experiment" aria-labelledby="b-1-2-title">
+                    <h4 id="b-1-2-title">1.2 Using the UNet to Train a Denoiser</h4>
+                    <figure class="result-figure">
+                      <p class="section-note">The noising process: Gaussian noise increases from top to bottom.</p>
+                      <a class="image-link" href="assets/partb_1_2_0/noising_process.png" target="_blank" rel="noopener" aria-label="Open full-size image: MNIST noising process.">
+                        <img src="assets/partb_1_2_0/noising_process.png" width="1092" height="794" alt="MNIST digits with increasing levels of Gaussian noise from the top row to the bottom row." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+
+                    <h5 class="experiment-subtitle">1.2.1 Training</h5>
+                    <p class="section-note">Each result shows the clean images, noisy inputs and denoised predictions from top to bottom.</p>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1)</strong> Single-step denoising UNet training loss curve.</p>
+                      <a class="image-link" href="assets/partb_1_2_1/loss_curve.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising UNet training loss.">
+                        <img src="assets/partb_1_2_1/loss_curve.png" width="779" height="290" alt="Mean squared error over optimizer steps while training the single-step denoising UNet." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> Denoising results after epoch <strong>1</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_1/denoise_1.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising results after epoch 1.">
+                        <img src="assets/partb_1_2_1/denoise_1.png" width="980" height="334" alt="Clean MNIST digits, noisy inputs, and denoised predictions after epoch 1." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3)</strong> Denoising results after epoch <strong>5</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_1/denoise_5.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising results after epoch 5.">
+                        <img src="assets/partb_1_2_1/denoise_5.png" width="980" height="334" alt="Clean MNIST digits, noisy inputs, and denoised predictions after epoch 5." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+
+                    <h5 class="experiment-subtitle">1.2.2 Out-of-Distribution Testing</h5>
+                    <p class="section-note">Denoising results across noise levels, ordered by increasing σ. Rows show clean images, noisy inputs and predictions from top to bottom.</p>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1)</strong> Noise level σ = <strong>0.0</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_2/denoise_0.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising at sigma = 0.0.">
+                        <img src="assets/partb_1_2_2/denoise_0.png" width="980" height="334" alt="Clean MNIST digits, inputs, and denoised predictions at sigma = 0.0." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> Noise level σ = <strong>0.2</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_2/denoise_2.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising at sigma = 0.2.">
+                        <img src="assets/partb_1_2_2/denoise_2.png" width="980" height="334" alt="Clean MNIST digits, noisy inputs, and denoised predictions at sigma = 0.2." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3)</strong> Noise level σ = <strong>0.4</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_2/denoise_4.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising at sigma = 0.4.">
+                        <img src="assets/partb_1_2_2/denoise_4.png" width="980" height="334" alt="Clean MNIST digits, noisy inputs, and denoised predictions at sigma = 0.4." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(4)</strong> Noise level σ = <strong>0.5</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_2/denoise_5.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising at sigma = 0.5.">
+                        <img src="assets/partb_1_2_2/denoise_5.png" width="980" height="334" alt="Clean MNIST digits, noisy inputs, and denoised predictions at sigma = 0.5." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(5)</strong> Noise level σ = <strong>0.6</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_2/denoise_6.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising at sigma = 0.6.">
+                        <img src="assets/partb_1_2_2/denoise_6.png" width="980" height="334" alt="Clean MNIST digits, noisy inputs, and denoised predictions at sigma = 0.6." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(6)</strong> Noise level σ = <strong>0.8</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_2/denoise_8.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising at sigma = 0.8.">
+                        <img src="assets/partb_1_2_2/denoise_8.png" width="980" height="334" alt="Clean MNIST digits, noisy inputs, and denoised predictions at sigma = 0.8." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(7)</strong> Noise level σ = <strong>1.0</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_2/denoise_10.png" target="_blank" rel="noopener" aria-label="Open full-size image: Denoising at sigma = 1.0.">
+                        <img src="assets/partb_1_2_2/denoise_10.png" width="980" height="334" alt="Clean MNIST digits, noisy inputs, and denoised predictions at sigma = 1.0." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+
+                    <h5 class="experiment-subtitle">1.2.3 Denoising Pure Noise</h5>
+                    <p class="section-note">Rows show the clean reference images, pure-noise inputs and model predictions.</p>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1)</strong> Training loss curve for denoising pure noise.</p>
+                      <a class="image-link" href="assets/partb_1_2_3/loss_curve.png" target="_blank" rel="noopener" aria-label="Open full-size image: Pure-noise denoising training loss.">
+                        <img src="assets/partb_1_2_3/loss_curve.png" width="788" height="290" alt="Mean squared error over optimizer steps while training the UNet to denoise pure noise." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> Pure-noise denoising results after epoch <strong>1</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_3/denoise_1.png" target="_blank" rel="noopener" aria-label="Open full-size image: Pure-noise denoising after epoch 1.">
+                        <img src="assets/partb_1_2_3/denoise_1.png" width="980" height="334" alt="Clean reference digits, pure-noise inputs, and blurred predictions after epoch 1." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3)</strong> Pure-noise denoising results after epoch <strong>5</strong>.</p>
+                      <a class="image-link" href="assets/partb_1_2_3/denoise_5.png" target="_blank" rel="noopener" aria-label="Open full-size image: Pure-noise denoising after epoch 5.">
+                        <img src="assets/partb_1_2_3/denoise_5.png" width="980" height="334" alt="Clean reference digits, pure-noise inputs, and blurred predictions after epoch 5." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                </div>
+              </section>
+
+              <section class="topic" aria-labelledby="b-two-title">
+                <span class="topic-number">Section 2</span>
+                <h3 id="b-two-title">Training a Flow Matching Model</h3>
+                <div class="subtopics">
+                  <section class="experiment" id="b-2-2" aria-labelledby="b-2-2-title">
+                    <h4 id="b-2-2-title">2.2 Training the UNet</h4>
+                    <figure class="result-figure">
+                      <p class="section-note">Time-conditioned flow matching training loss curve.</p>
+                      <a class="image-link" href="assets/partb_2_2/loss_curve.png" target="_blank" rel="noopener" aria-label="Open full-size image: Time-conditioned flow matching training loss.">
+                        <img src="assets/partb_2_2/loss_curve.png" width="803" height="290" alt="Mean squared error over optimizer steps for the time-conditioned flow matching UNet." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="b-2-3" aria-labelledby="b-2-3-title">
+                    <h4 id="b-2-3-title">2.3 Sampling from the UNet</h4>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1)</strong> Time-conditioned samples after epoch <strong>1</strong>.</p>
+                      <a class="image-link" href="assets/partb_2_3/denoise_1.png" target="_blank" rel="noopener" aria-label="Open full-size image: Time-conditioned samples after epoch 1.">
+                        <img src="assets/partb_2_3/denoise_1.png" width="1029" height="449" alt="Forty MNIST-style digit samples generated by the time-conditioned UNet after epoch 1." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> Time-conditioned samples after epoch <strong>5</strong>.</p>
+                      <a class="image-link" href="assets/partb_2_3/denoise_5.png" target="_blank" rel="noopener" aria-label="Open full-size image: Time-conditioned samples after epoch 5.">
+                        <img src="assets/partb_2_3/denoise_5.png" width="1029" height="449" alt="Forty MNIST-style digit samples generated by the time-conditioned UNet after epoch 5." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3)</strong> Time-conditioned samples after epoch <strong>10</strong>.</p>
+                      <a class="image-link" href="assets/partb_2_3/denoise_10.png" target="_blank" rel="noopener" aria-label="Open full-size image: Time-conditioned samples after epoch 10.">
+                        <img src="assets/partb_2_3/denoise_10.png" width="1029" height="449" alt="Forty MNIST-style digit samples generated by the time-conditioned UNet after epoch 10." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="b-2-5" aria-labelledby="b-2-5-title">
+                    <h4 id="b-2-5-title">2.5 Training the UNet</h4>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1)</strong> Class-conditioned flow matching training loss curve <strong>with</strong> a learning rate scheduler.</p>
+                      <a class="image-link" href="assets/partb_2_5/loss_curve_w.png" target="_blank" rel="noopener" aria-label="Open full-size image: Class-conditioned training loss with a learning rate scheduler.">
+                        <img src="assets/partb_2_5/loss_curve_w.png" width="790" height="290" alt="Mean squared error over optimizer steps for the class-conditioned UNet trained with a learning rate scheduler." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2)</strong> Class-conditioned flow matching training loss curve <strong>without</strong> a learning rate scheduler.</p>
+                      <a class="image-link" href="assets/partb_2_5/loss_curve_wo.png" target="_blank" rel="noopener" aria-label="Open full-size image: Class-conditioned training loss without a learning rate scheduler.">
+                        <img src="assets/partb_2_5/loss_curve_wo.png" width="790" height="290" alt="Mean squared error over optimizer steps for the class-conditioned UNet trained without a learning rate scheduler." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                  <section class="experiment" id="b-2-6" aria-labelledby="b-2-6-title">
+                    <h4 id="b-2-6-title">2.6 Sampling from the UNet</h4>
+                    <p class="section-note">Each grid shows four samples of every digit, with columns ordered from 0 to 9. For each epoch, compare the models trained with and without a learning rate scheduler.</p>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1a)</strong> Class-conditioned samples after epoch <strong>1</strong>, <strong>with</strong> a learning rate scheduler.</p>
+                      <a class="image-link" href="assets/partb_2_6/denoise_w_1.png" target="_blank" rel="noopener" aria-label="Open full-size image: Class-conditioned samples after epoch 1 with a learning rate scheduler.">
+                        <img src="assets/partb_2_6/denoise_w_1.png" width="1029" height="449" alt="Four rows of generated digits from 0 to 9 after epoch 1 of class-conditioned training with a learning rate scheduler." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(1b)</strong> Class-conditioned samples after epoch <strong>1</strong>, <strong>without</strong> a learning rate scheduler.</p>
+                      <a class="image-link" href="assets/partb_2_6/denoise_wo_1.png" target="_blank" rel="noopener" aria-label="Open full-size image: Class-conditioned samples after epoch 1 without a learning rate scheduler.">
+                        <img src="assets/partb_2_6/denoise_wo_1.png" width="1029" height="449" alt="Four rows of generated digits from 0 to 9 after epoch 1 of class-conditioned training without a learning rate scheduler." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2a)</strong> Class-conditioned samples after epoch <strong>5</strong>, <strong>with</strong> a learning rate scheduler.</p>
+                      <a class="image-link" href="assets/partb_2_6/denoise_w_5.png" target="_blank" rel="noopener" aria-label="Open full-size image: Class-conditioned samples after epoch 5 with a learning rate scheduler.">
+                        <img src="assets/partb_2_6/denoise_w_5.png" width="1029" height="449" alt="Four rows of generated digits from 0 to 9 after epoch 5 of class-conditioned training with a learning rate scheduler." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(2b)</strong> Class-conditioned samples after epoch <strong>5</strong>, <strong>without</strong> a learning rate scheduler.</p>
+                      <a class="image-link" href="assets/partb_2_6/denoise_wo_5.png" target="_blank" rel="noopener" aria-label="Open full-size image: Class-conditioned samples after epoch 5 without a learning rate scheduler.">
+                        <img src="assets/partb_2_6/denoise_wo_5.png" width="1029" height="449" alt="Four rows of generated digits from 0 to 9 after epoch 5 of class-conditioned training without a learning rate scheduler." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3a)</strong> Class-conditioned samples after epoch <strong>10</strong>, <strong>with</strong> a learning rate scheduler.</p>
+                      <a class="image-link" href="assets/partb_2_6/denoise_w_10.png" target="_blank" rel="noopener" aria-label="Open full-size image: Class-conditioned samples after epoch 10 with a learning rate scheduler.">
+                        <img src="assets/partb_2_6/denoise_w_10.png" width="1029" height="449" alt="Four rows of generated digits from 0 to 9 after epoch 10 of class-conditioned training with a learning rate scheduler." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                    <figure class="result-figure">
+                      <p class="section-note"><strong>(3b)</strong> Class-conditioned samples after epoch <strong>10</strong>, <strong>without</strong> a learning rate scheduler.</p>
+                      <a class="image-link" href="assets/partb_2_6/denoise_wo_10.png" target="_blank" rel="noopener" aria-label="Open full-size image: Class-conditioned samples after epoch 10 without a learning rate scheduler.">
+                        <img src="assets/partb_2_6/denoise_wo_10.png" width="1029" height="449" alt="Four rows of generated digits from 0 to 9 after epoch 10 of class-conditioned training without a learning rate scheduler." loading="lazy" decoding="async">
+                      </a>
+                    </figure>
+                  </section>
+                </div>
+              </section>
+
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span>CS 180 / Project 03</span>
+      <a href="#top">Back to top</a>
+    </footer>
+  </body>
+</html>
